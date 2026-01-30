@@ -9,6 +9,7 @@ const Admin = () => {
   const { isAdmin, products, addProduct, updateProduct, deleteProduct } = useShop();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -44,9 +45,14 @@ const Admin = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 800 * 1024) { // Limit to 800KB
+        alert("Image is too large! Please use an image smaller than 800KB.");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result, imageFile: file });
+        setFormData({ ...formData, image: reader.result });
       };
       reader.readAsDataURL(file);
     }
@@ -54,6 +60,8 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     const productData = {
       ...formData,
       price: parseFloat(formData.price)
@@ -68,7 +76,9 @@ const Admin = () => {
       handleCancel();
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Failed to save product. Please try again.");
+      alert(`Failed to save product: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -169,8 +179,8 @@ const Admin = () => {
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <Button type="button" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                <Button type="submit" variant="primary">{editingId ? 'Update Product' : 'Save Product'}</Button>
+                <Button type="button" variant="ghost" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : (editingId ? 'Update Product' : 'Save Product')}</Button>
               </div>
             </form>
           </div>

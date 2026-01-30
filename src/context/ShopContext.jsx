@@ -7,12 +7,7 @@ import {
   deleteDoc, 
   doc 
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL 
-} from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 
 const ShopContext = createContext();
 
@@ -41,28 +36,16 @@ export const ShopProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const uploadImage = async (file) => {
-    if (!file) return null;
-    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-  };
+  // Removed uploadImage function as we are saving Base64 directly to Firestore
 
   const addProduct = async (productData) => {
     try {
-      let imageUrl = productData.image;
-      
-      // Upload image if a file is provided
-      if (productData.imageFile) {
-        imageUrl = await uploadImage(productData.imageFile);
-      }
-
-      // Remove the file object before saving to DB
+      // Ensure image is a string (Base64 or URL)
+      // We don't need to uploadFile anymore
       const { imageFile, ...dataToSave } = productData;
       
       await addDoc(collection(db, 'products'), {
         ...dataToSave,
-        image: imageUrl,
         createdAt: Date.now()
       });
     } catch (error) {
@@ -73,17 +56,10 @@ export const ShopProvider = ({ children }) => {
 
   const updateProduct = async (id, productData) => {
     try {
-      let imageUrl = productData.image;
-
-      if (productData.imageFile) {
-        imageUrl = await uploadImage(productData.imageFile);
-      }
-
       const { imageFile, ...dataToSave } = productData;
 
       await updateDoc(doc(db, 'products', id), {
-        ...dataToSave,
-        image: imageUrl
+        ...dataToSave
       });
     } catch (error) {
       console.error("Error updating product:", error);
