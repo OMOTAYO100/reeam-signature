@@ -46,26 +46,30 @@ const Admin = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result });
+        setFormData({ ...formData, image: reader.result, imageFile: file });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const productData = {
       ...formData,
       price: parseFloat(formData.price)
     };
 
-    if (editingId) {
-      updateProduct(editingId, productData);
-    } else {
-      addProduct(productData);
+    try {
+      if (editingId) {
+        await updateProduct(editingId, productData);
+      } else {
+        await addProduct(productData);
+      }
+      handleCancel();
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Failed to save product. Please try again.");
     }
-    
-    handleCancel();
   };
 
   return (

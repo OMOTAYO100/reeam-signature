@@ -1,131 +1,103 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc 
+} from 'firebase/firestore';
+import { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from 'firebase/storage';
+import { db, storage } from '../firebase';
 
 const ShopContext = createContext();
 
 export const useShop = () => useContext(ShopContext);
 
-const INITIAL_PRODUCTS = [
-  {
-    id: 1,
-    name: "Classic Oversized Tee",
-    price: 45000,
-    category: "unisex",
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1780&auto=format&fit=crop",
-    description: "Premium cotton oversized t-shirt in charcoal."
-  },
-  {
-    id: 2,
-    name: "Pleated Tapered Trousers",
-    price: 120000,
-    category: "men",
-    image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?q=80&w=1974&auto=format&fit=crop",
-    description: "Elegant pleated trousers for a relaxed silhouette."
-  },
-  {
-    id: 3,
-    name: "Silk Blend Blouse",
-    price: 150000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1563178406-4cdc2923acbc?q=80&w=1974&auto=format&fit=crop",
-    description: "Luxurious silk blend blouse in warm stone."
-  },
-  {
-    id: 4,
-    name: "Structured Blazer",
-    price: 280000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1936&auto=format&fit=crop",
-    description: "Tailored blazer with a modern cut."
-  },
-  {
-    id: 5,
-    name: "Streetwear Hoodie",
-    price: 85000,
-    category: "unisex",
-    image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=2070&auto=format&fit=crop",
-    description: "Heavyweight cotton hoodie."
-  },
-  {
-    id: 6,
-    name: "Wide Leg Denim",
-    price: 110000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=1887&auto=format&fit=crop",
-    description: "High-waisted wide leg denim jeans."
-  },
-  {
-    id: 7,
-    name: "Utility Cargo Pants",
-    price: 95000,
-    category: "men",
-    image: "https://images.unsplash.com/photo-1517445312882-b892306cde9b?q=80&w=1974&auto=format&fit=crop",
-    description: "Functional cargo pants with multiple pockets."
-  },
-  {
-    id: 8,
-    name: "Cropped Knit Sweater",
-    price: 75000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1624823183496-6e9e5c46b6a2?q=80&w=2070&auto=format&fit=crop",
-    description: "Soft knit sweater with a cropped fit."
-  },
-  {
-    id: 9,
-    name: "Minimalist Leather Sneakers",
-    price: 180000,
-    category: "men",
-    image: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?q=80&w=1780&auto=format&fit=crop",
-    description: "Clean white leather sneakers."
-  },
-  {
-    id: 10,
-    name: "Satin Slip Dress",
-    price: 135000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=1888&auto=format&fit=crop",
-    description: "Elegant satin slip dress for evening wear."
-  },
-  {
-    id: 11,
-    name: "Tech Fleece Joggers",
-    price: 90000,
-    category: "men",
-    image: "https://images.unsplash.com/photo-1552940259-7ff72a563b72?q=80&w=1887&auto=format&fit=crop",
-    description: "Comfortable tech fleece joggers."
-  },
-  {
-    id: 12,
-    name: "Oversized Trench Coat",
-    price: 320000,
-    category: "women",
-    image: "https://images.unsplash.com/photo-1616142718915-d9dfb12c8ff6?q=80&w=1887&auto=format&fit=crop",
-    description: "Classic oversized trench coat."
-  }
-];
-
 export const ShopProvider = ({ children }) => {
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('reeam_products_v3');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
-
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Real-time sync with Firestore
   useEffect(() => {
-    localStorage.setItem('reeam_products_v3', JSON.stringify(products));
-  }, [products]);
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const productsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setProducts(productsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching products:", error);
+      setLoading(false);
+    });
 
-  const addProduct = (product) => {
-    setProducts([...products, { ...product, id: Date.now() }]);
+    return () => unsubscribe();
+  }, []);
+
+  const uploadImage = async (file) => {
+    if (!file) return null;
+    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
   };
 
-  const updateProduct = (id, updatedProduct) => {
-    setProducts(products.map(p => p.id === id ? { ...p, ...updatedProduct } : p));
+  const addProduct = async (productData) => {
+    try {
+      let imageUrl = productData.image;
+      
+      // Upload image if a file is provided
+      if (productData.imageFile) {
+        imageUrl = await uploadImage(productData.imageFile);
+      }
+
+      // Remove the file object before saving to DB
+      const { imageFile, ...dataToSave } = productData;
+      
+      await addDoc(collection(db, 'products'), {
+        ...dataToSave,
+        image: imageUrl,
+        createdAt: Date.now()
+      });
+    } catch (error) {
+      console.error("Error adding product:", error);
+      throw error;
+    }
   };
 
-  const deleteProduct = (id) => {
-    setProducts(products.filter(p => p.id !== id));
+  const updateProduct = async (id, productData) => {
+    try {
+      let imageUrl = productData.image;
+
+      if (productData.imageFile) {
+        imageUrl = await uploadImage(productData.imageFile);
+      }
+
+      const { imageFile, ...dataToSave } = productData;
+
+      await updateDoc(doc(db, 'products', id), {
+        ...dataToSave,
+        image: imageUrl
+      });
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    }
+  };
+
+  const deleteProduct = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw error;
+    }
   };
 
   const addToCart = (product) => {
@@ -148,6 +120,7 @@ export const ShopProvider = ({ children }) => {
   return (
     <ShopContext.Provider value={{
       products,
+      loading,
       cart,
       isAdmin,
       addProduct,
