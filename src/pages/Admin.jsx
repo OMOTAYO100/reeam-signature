@@ -186,7 +186,40 @@ const Admin = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {/* Mobile View: Card Layout */}
+        <div className="md:hidden space-y-4">
+          {products.map((product) => (
+            <div key={product.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden p-4 shadow-sm">
+              <div className="flex gap-4">
+                <img className="h-20 w-20 rounded-lg object-cover border border-gray-100" src={product.image} alt={product.name} />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-gray-900">{product.name}</div>
+                  <div className="text-xs text-gray-500 capitalize mb-1">{product.category}</div>
+                  <div className="text-sm font-medium text-[var(--color-primary)]">₦{product.price.toLocaleString()}</div>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4 pt-3 border-t border-gray-50">
+                <button 
+                  onClick={() => handleEdit(product)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-indigo-50 text-indigo-600 rounded-sm hover:bg-indigo-100 transition-colors"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Edit</span>
+                </button>
+                <button 
+                  onClick={() => deleteProduct(product.id)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-red-50 text-red-600 rounded-sm hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Delete</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop View: Table Layout */}
+        <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
