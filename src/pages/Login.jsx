@@ -17,7 +17,7 @@ const Login = () => {
       loginAdmin();
       navigate('/admin');
     } else {
-      setError('Invalid credentials. Use admin@reeam.com / admin123');
+      setError('Invalid credentials. Please try again.');
     }
   };
 
