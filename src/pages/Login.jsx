@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
@@ -24,6 +25,11 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
       <Navbar />
+      <div className="absolute top-24 left-4 sm:left-8">
+        <Link to="/" className="flex items-center text-gray-600 hover:text-[var(--color-primary)] transition-colors">
+          <ArrowLeft className="h-5 w-5 mr-1" /> Back to Home
+        </Link>
+      </div>  
       <div className="flex items-center justify-center min-h-[80vh] px-4">
         <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-sm border border-gray-100">
           <h2 className="text-2xl font-serif font-bold text-center mb-6 text-[var(--color-primary)]">Admin Login</h2>
