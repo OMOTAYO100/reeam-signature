@@ -3,12 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB9lCHUdnd-Bz0oDM68TEwk7Y-Dp4tfn8E",
-  authDomain: "reeam-signature-d298b.firebaseapp.com",
-  projectId: "reeam-signature-d298b",
-  storageBucket: "reeam-signature-d298b.firebasestorage.app",
-  messagingSenderId: "484657144875",
-  appId: "1:484657144875:web:ca788826864dc9ef3e366e"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
