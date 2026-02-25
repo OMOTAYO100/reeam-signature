@@ -7,7 +7,8 @@ import {
   deleteDoc, 
   doc 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth } from '../firebase';
 
 const ShopContext = createContext();
 
@@ -18,8 +19,9 @@ export const ShopProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // Real-time sync with Firestore
+  // Sync products from Firestore
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
       const productsData = snapshot.docs.map(doc => ({
@@ -36,14 +38,18 @@ export const ShopProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Removed uploadImage function as we are saving Base64 directly to Firestore
+  // Sync auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAdmin(currentUser && currentUser.email === 'admin@reeam.com');
+    });
+    return () => unsubscribe();
+  }, []);
 
   const addProduct = async (productData) => {
     try {
-      // Ensure image is a string (Base64 or URL)
-      // We don't need to uploadFile anymore
       const { imageFile, ...dataToSave } = productData;
-      
       await addDoc(collection(db, 'products'), {
         ...dataToSave,
         createdAt: Date.now()
@@ -57,7 +63,6 @@ export const ShopProvider = ({ children }) => {
   const updateProduct = async (id, productData) => {
     try {
       const { imageFile, ...dataToSave } = productData;
-
       await updateDoc(doc(db, 'products', id), {
         ...dataToSave
       });
@@ -90,8 +95,7 @@ export const ShopProvider = ({ children }) => {
     return cart.reduce((total, item) => total + item.price, 0);
   };
 
-  const loginAdmin = () => setIsAdmin(true);
-  const logoutAdmin = () => setIsAdmin(false);
+  const logoutAdmin = () => signOut(auth);
 
   return (
     <ShopContext.Provider value={{
@@ -99,13 +103,13 @@ export const ShopProvider = ({ children }) => {
       loading,
       cart,
       isAdmin,
+      user,
       addProduct,
       updateProduct,
       deleteProduct,
       addToCart,
       removeFromCart,
       getCartTotal,
-      loginAdmin,
       logoutAdmin
     }}>
       {children}
